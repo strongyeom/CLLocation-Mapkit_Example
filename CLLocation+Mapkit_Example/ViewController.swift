@@ -14,6 +14,16 @@ class ViewController: UIViewController {
     
     let locationManager = CLLocationManager()
     let mapView = MKMapView()
+    let currentButton = {
+        let button = UIButton()
+        let imageConfig = UIImage.SymbolConfiguration(pointSize: 50, weight: .light)
+        let image = UIImage(systemName: "location.fill", withConfiguration: imageConfig)
+        button.setTitle("", for: .normal)
+        button.setImage(image, for: .normal)
+        return button
+    }()
+    
+    var authorization: CLAuthorizationStatus = .notDetermined
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,13 +31,37 @@ class ViewController: UIViewController {
         locationManager.delegate = self
         // View에 mapView 올리기
         view.addSubview(mapView)
-        view.backgroundColor = .white
+       
         // mapView 레이아웃 설정
         mapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
+        
+        settingCurrentBtn()
+
        
         checkDeviceLocationAuthorization()
+    }
+    
+    func settingCurrentBtn() {
+        view.addSubview(currentButton)
+        currentButton.addTarget(self, action: #selector(currentLocationBtnClicked(_:)), for: .touchUpInside)
+        currentButton.tintColor = .red
+        currentButton.snp.makeConstraints { make in
+            make.top.equalTo(view.safeAreaInsets).inset(50)
+            make.trailing.equalTo(view.safeAreaInsets).inset(30)
+        }
+    }
+    
+    @objc func currentLocationBtnClicked(_ sender: UIButton) {
+        print("현재 위치 불러오기 ", authorization.rawValue)
+        
+        let status = authorization
+        
+        if status == CLAuthorizationStatus.denied {
+            showLocationSettingAlert()
+        }
+        
     }
     
     // 내가 위치한 지역과 핀(Annotation) 설정
@@ -75,18 +109,19 @@ class ViewController: UIViewController {
             // 위치 서비스를 이용 할 수 있다면
             if CLLocationManager.locationServicesEnabled() {
                 
-                let authorization: CLAuthorizationStatus
                 
+               // authorization: CLAuthorizationStatus
                 if #available(iOS 14.0, *) {
                     // 열거형에 해당하는 element를 authorization 할당
-                    authorization = self.locationManager.authorizationStatus
+                    self.authorization = self.locationManager.authorizationStatus
                 } else {
-                    authorization = CLLocationManager.authorizationStatus()
+                    self.authorization = CLLocationManager.authorizationStatus()
                 }
-                print("checkDeviceLocationAuthorization - authorization",authorization.rawValue)
+                print("checkDeviceLocationAuthorization - authorization",self.authorization.rawValue)
                 // 실질적으로 main 화면에 alert을 띄어주는 부분이기 때문에 mainThread에서 작업한다.
                 DispatchQueue.main.async {
-                    self.checkCurrentLocationAutorization(status: authorization)
+                   
+                    self.checkCurrentLocationAutorization(status: self.authorization)
                 }
             }
         }
