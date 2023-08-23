@@ -33,7 +33,7 @@ class ViewController: UIViewController {
     // 내가 위치한 지역과 핀(Annotation) 설정
     func setRegionAndAnnotation(center: CLLocationCoordinate2D) {
         // 디바이스 현재 위도 경도 CLLocationCoordinate2D(latitude: 37.517926, longitude: 126.886371)
-        
+        // 37.526384, 126.896269
         
         let region = MKCoordinateRegion(center: center, latitudinalMeters: 100, longitudinalMeters: 100)
         // mapView에 보여주기
@@ -56,7 +56,12 @@ class ViewController: UIViewController {
                 UIApplication.shared.open(appSetting)
             }
         }
-        let cancel = UIAlertAction(title: "취소", style: .cancel)
+        let cancel = UIAlertAction(title: "취소", style: .cancel) { _ in
+            
+            let kungchsa = CLLocationCoordinate2D(latitude: 37.517926, longitude: 126.886371)
+            
+            self.setRegionAndAnnotation(center: kungchsa)
+        }
         
         alert.addAction(goSetting)
         alert.addAction(cancel)
