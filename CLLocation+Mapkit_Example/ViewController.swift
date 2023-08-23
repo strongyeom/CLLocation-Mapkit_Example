@@ -54,46 +54,37 @@ class ViewController: UIViewController {
         
     }
     
-    func addPlaceRegionAndAnnotation(type: MovieTheaterEnum) {
+    // 필터링한 어노테이션만 보여주기
+    func filterMovieAnnotation(type: MovieTheaterEnum) {
         // mapView 싹 지우기
         self.mapView.removeAnnotations(self.mapView.annotations)
         
-        for i in theaterList.mapAnnotations {
-            let annotation = MKPointAnnotation()
-            
-            switch type {
-            case .lotte:
-                if i.type == type.rawValue {
-                    print("롯데")
-                    annotation.title = i.location
-                    annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
-                    mapView.addAnnotation(annotation)
-                }
+        // .all에 해당 할때만
+        if case .all = type {
+            self.mapView.removeAnnotations(self.mapView.annotations)
 
-            case .megaBox:
-                if i.type == type.rawValue {
-                    print("메가박스")
-                    annotation.title = i.location
-                    annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
-                    mapView.addAnnotation(annotation)
-                }
-            case .cgv:
-                if i.type == type.rawValue {
-                    print("cgv")
-                    annotation.title = i.location
-                    annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
-                    mapView.addAnnotation(annotation)
-                }
-            case .all:
-                annotation.title = i.location
-                annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
-                mapView.addAnnotation(annotation)
+            let allTheater = theaterList.mapAnnotations.filter { !$0.type.contains(type.rawValue) }.map{ value -> MKPointAnnotation in
+                let annotation = MKPointAnnotation()
+                annotation.title = value.location
+                annotation.coordinate = CLLocationCoordinate2D(latitude: value.latitude, longitude: value.longitude)
+                return annotation
             }
+            self.mapView.addAnnotations(allTheater)
         }
         
-        
+       // 나머지 열거형 element일때
+        let filterTheaterTitle = theaterList.mapAnnotations.filter {
+            $0.type.contains(type.rawValue)
+        }.map { value -> MKPointAnnotation in
+            let annotation = MKPointAnnotation()
+            annotation.title = value.location
+            annotation.coordinate = CLLocationCoordinate2D(latitude: value.latitude, longitude: value.longitude)
+            return annotation
+        }
+        print("filterTheaterTitle",filterTheaterTitle)
+        self.mapView.addAnnotations(filterTheaterTitle)
     }
-    
+
     func settingMapView() {
         // View에 mapView 올리기
         view.addSubview(mapView)
@@ -119,25 +110,26 @@ class ViewController: UIViewController {
         
         let lotte = UIAlertAction(title: "롯데시네마", style: .default) { _ in
             print("롯데시네마 눌림")
-            self.addPlaceRegionAndAnnotation(type: .lotte)
+            self.filterMovieAnnotation(type: .lotte)
             
         }
         
         let megaBox = UIAlertAction(title: "메가박스", style: .default) { _ in
             print("메가박스 눌림")
-            self.addPlaceRegionAndAnnotation(type: .megaBox)
+            self.filterMovieAnnotation(type: .megaBox)
         }
         
         let cgv = UIAlertAction(title: "cgv", style: .default) { _ in
             print("cgv 눌림")
-            self.addPlaceRegionAndAnnotation(type: .cgv)
+            self.filterMovieAnnotation(type: .cgv)
         }
         
         let allMovieTheater = UIAlertAction(title: "전체영화관", style: .default) { _ in
             print("전체영화관 눌림")
             guard let currentPoint = self.startPoint else { return }
-            self.addPlaceRegionAndAnnotation(type: .all)
+            self.filterMovieAnnotation(type: .all)
             self.setRegionAndAnnotation(center: currentPoint)
+            
             
         }
         let cancel = UIAlertAction(title: "취소", style: .cancel)
@@ -251,7 +243,7 @@ class ViewController: UIViewController {
         case .authorizedWhenInUse:
             print("한번만 권한 허용")
             // 성공적으로 위치를 받아오면 델리게이트로 설정한 didUpdateLocations() 실행
-            addPlaceRegionAndAnnotation(type: .all)
+            filterMovieAnnotation(type: .all)
             print("맵뷰에 어떤게 올라가 있나요? ",mapView.annotations.map { $0.title!})
             locationManager.startUpdatingLocation()
         case .authorized:
