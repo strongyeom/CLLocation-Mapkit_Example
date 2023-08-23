@@ -15,6 +15,7 @@ enum MovieTheaterEnum: String {
     case megaBox = "메가박스"
     case cgv = "CGV"
     case all
+   
 }
 
 class ViewController: UIViewController {
@@ -22,6 +23,9 @@ class ViewController: UIViewController {
     let locationManager = CLLocationManager()
     let mapView = MKMapView()
     let theaterList = TheaterList()
+    
+    
+    
     
     let currentButton = {
         let button = UIButton()
@@ -34,7 +38,8 @@ class ViewController: UIViewController {
     
     var authorization: CLAuthorizationStatus = .notDetermined
     var movieTheaterType: MovieTheaterEnum = .all
-   
+    var startPoint: CLLocationCoordinate2D?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         print("viewDidLoad")
@@ -50,61 +55,43 @@ class ViewController: UIViewController {
     }
     
     func addPlaceRegionAndAnnotation(type: MovieTheaterEnum) {
-       
-        var exampleArray: [MKAnnotation] = []
+        // mapView 싹 지우기
+        self.mapView.removeAnnotations(self.mapView.annotations)
+        
         for i in theaterList.mapAnnotations {
-            
-//            if i.type == type.rawValue {
-//
-//                print("\(type.rawValue)입니다.")
-//                let annotation = MKPointAnnotation()
-//                annotation.title = i.location
-//                annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
-//                print("annotation",annotation)
-//                exampleArray.append(annotation)
-//
-//            }
-//
+            let annotation = MKPointAnnotation()
             
             switch type {
             case .lotte:
                 if i.type == type.rawValue {
                     print("롯데")
-                    let annotation = MKPointAnnotation()
                     annotation.title = i.location
                     annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
-                    print("annotation",annotation)
-                    exampleArray.append(annotation)
+                    mapView.addAnnotation(annotation)
                 }
-                
+
             case .megaBox:
                 if i.type == type.rawValue {
                     print("메가박스")
-                    let annotation = MKPointAnnotation()
                     annotation.title = i.location
                     annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
-                    print("annotation",annotation)
-                    exampleArray.append(annotation)
+                    mapView.addAnnotation(annotation)
                 }
             case .cgv:
                 if i.type == type.rawValue {
                     print("cgv")
-                    let annotation = MKPointAnnotation()
                     annotation.title = i.location
                     annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
-                    print("annotation",annotation)
-                    exampleArray.append(annotation)
+                    mapView.addAnnotation(annotation)
                 }
             case .all:
-                let annotation = MKPointAnnotation()
                 annotation.title = i.location
                 annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
-                print("annotation",annotation)
-                exampleArray.append(annotation)
+                mapView.addAnnotation(annotation)
             }
         }
         
-        mapView.addAnnotations(exampleArray)
+        
     }
     
     func settingMapView() {
@@ -132,38 +119,33 @@ class ViewController: UIViewController {
         
         let lotte = UIAlertAction(title: "롯데시네마", style: .default) { _ in
             print("롯데시네마 눌림")
-//            self.exampleArray = []
-            self.mapView.removeAnnotations(self.mapView.annotations)
             self.addPlaceRegionAndAnnotation(type: .lotte)
             
         }
         
         let megaBox = UIAlertAction(title: "메가박스", style: .default) { _ in
             print("메가박스 눌림")
-//            self.exampleArray = []
-            self.mapView.removeAnnotations(self.mapView.annotations)
             self.addPlaceRegionAndAnnotation(type: .megaBox)
         }
         
         let cgv = UIAlertAction(title: "cgv", style: .default) { _ in
             print("cgv 눌림")
-            self.mapView.removeAnnotations(self.mapView.annotations)
             self.addPlaceRegionAndAnnotation(type: .cgv)
         }
         
         let allMovieTheater = UIAlertAction(title: "전체영화관", style: .default) { _ in
             print("전체영화관 눌림")
-            self.mapView.removeAnnotations(self.mapView.annotations)
+            guard let currentPoint = self.startPoint else { return }
             self.addPlaceRegionAndAnnotation(type: .all)
+            self.setRegionAndAnnotation(center: currentPoint)
             
         }
         let cancel = UIAlertAction(title: "취소", style: .cancel)
         
-        alert.addAction(lotte)
-        alert.addAction(megaBox)
-        alert.addAction(cgv)
-        alert.addAction(allMovieTheater)
-        alert.addAction(cancel)
+        [lotte, megaBox, cgv, allMovieTheater, cancel].forEach {
+            alert.addAction($0)
+        }
+
         present(alert, animated: true)
     }
     
@@ -177,6 +159,7 @@ class ViewController: UIViewController {
         }
     }
     
+    // 권한이 거부되어있다면 iOS 설정 화면으로 이동하는 Alert 띄우기
     @objc func currentLocationBtnClicked(_ sender: UIButton) {
         print("현재 위치 불러오기 ", authorization.rawValue)
         
@@ -269,6 +252,7 @@ class ViewController: UIViewController {
             print("한번만 권한 허용")
             // 성공적으로 위치를 받아오면 델리게이트로 설정한 didUpdateLocations() 실행
             addPlaceRegionAndAnnotation(type: .all)
+            print("맵뷰에 어떤게 올라가 있나요? ",mapView.annotations.map { $0.title!})
             locationManager.startUpdatingLocation()
         case .authorized:
             print("authorized")
@@ -286,7 +270,8 @@ extension ViewController: CLLocationManagerDelegate {
         print("위치 권한을 성공적으로 받아왔을때",locations)
         if let coordinate = locations.last?.coordinate {
             setRegionAndAnnotation(center: coordinate)
-            
+            print("현재 위치 : \(mapView.annotations.map { $0.title!})")
+            startPoint = coordinate
         }
         
     }
