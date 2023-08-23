@@ -10,10 +10,19 @@ import CoreLocation
 import MapKit
 import SnapKit
 
+enum MovieTheaterEnum: String {
+    case lotte = "롯데시네마"
+    case megaBox = "메가박스"
+    case cgv = "CGV"
+    case all
+}
+
 class ViewController: UIViewController {
     
     let locationManager = CLLocationManager()
     let mapView = MKMapView()
+    let theaterList = TheaterList()
+    
     let currentButton = {
         let button = UIButton()
         let imageConfig = UIImage.SymbolConfiguration(pointSize: 50, weight: .light)
@@ -24,11 +33,81 @@ class ViewController: UIViewController {
     }()
     
     var authorization: CLAuthorizationStatus = .notDetermined
-
+    var movieTheaterType: MovieTheaterEnum = .all
+   
     override func viewDidLoad() {
         super.viewDidLoad()
         print("viewDidLoad")
+        
         locationManager.delegate = self
+        settingNavigationBar()
+        settingMapView()
+        settingCurrentBtn()
+        checkDeviceLocationAuthorization()
+        
+       
+        
+    }
+    
+    func addPlaceRegionAndAnnotation(type: MovieTheaterEnum) {
+       
+        var exampleArray: [MKAnnotation] = []
+        for i in theaterList.mapAnnotations {
+            
+//            if i.type == type.rawValue {
+//
+//                print("\(type.rawValue)입니다.")
+//                let annotation = MKPointAnnotation()
+//                annotation.title = i.location
+//                annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
+//                print("annotation",annotation)
+//                exampleArray.append(annotation)
+//
+//            }
+//
+            
+            switch type {
+            case .lotte:
+                if i.type == type.rawValue {
+                    print("롯데")
+                    let annotation = MKPointAnnotation()
+                    annotation.title = i.location
+                    annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
+                    print("annotation",annotation)
+                    exampleArray.append(annotation)
+                }
+                
+            case .megaBox:
+                if i.type == type.rawValue {
+                    print("메가박스")
+                    let annotation = MKPointAnnotation()
+                    annotation.title = i.location
+                    annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
+                    print("annotation",annotation)
+                    exampleArray.append(annotation)
+                }
+            case .cgv:
+                if i.type == type.rawValue {
+                    print("cgv")
+                    let annotation = MKPointAnnotation()
+                    annotation.title = i.location
+                    annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
+                    print("annotation",annotation)
+                    exampleArray.append(annotation)
+                }
+            case .all:
+                let annotation = MKPointAnnotation()
+                annotation.title = i.location
+                annotation.coordinate = CLLocationCoordinate2D(latitude: i.latitude, longitude: i.longitude)
+                print("annotation",annotation)
+                exampleArray.append(annotation)
+            }
+        }
+        
+        mapView.addAnnotations(exampleArray)
+    }
+    
+    func settingMapView() {
         // View에 mapView 올리기
         view.addSubview(mapView)
        
@@ -36,11 +115,56 @@ class ViewController: UIViewController {
         mapView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
+    }
+    
+    func settingNavigationBar() {
+        title = "지역 영화관"
+        // 코드로 navigationBar 영역부분 분리도 주기
+        navigationController?.navigationBar.scrollEdgeAppearance = UINavigationBarAppearance()
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Filter", style: .plain, target: self, action: #selector(filterBarButtonClicked(_:)))
         
-        settingCurrentBtn()
-
-       
-        checkDeviceLocationAuthorization()
+    }
+    
+    @objc func filterBarButtonClicked(_ sender: UIBarButtonItem) {
+        print("필터 버튼 눌림")
+        
+        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        
+        let lotte = UIAlertAction(title: "롯데시네마", style: .default) { _ in
+            print("롯데시네마 눌림")
+//            self.exampleArray = []
+            self.mapView.removeAnnotations(self.mapView.annotations)
+            self.addPlaceRegionAndAnnotation(type: .lotte)
+            
+        }
+        
+        let megaBox = UIAlertAction(title: "메가박스", style: .default) { _ in
+            print("메가박스 눌림")
+//            self.exampleArray = []
+            self.mapView.removeAnnotations(self.mapView.annotations)
+            self.addPlaceRegionAndAnnotation(type: .megaBox)
+        }
+        
+        let cgv = UIAlertAction(title: "cgv", style: .default) { _ in
+            print("cgv 눌림")
+            self.mapView.removeAnnotations(self.mapView.annotations)
+            self.addPlaceRegionAndAnnotation(type: .cgv)
+        }
+        
+        let allMovieTheater = UIAlertAction(title: "전체영화관", style: .default) { _ in
+            print("전체영화관 눌림")
+            self.mapView.removeAnnotations(self.mapView.annotations)
+            self.addPlaceRegionAndAnnotation(type: .all)
+            
+        }
+        let cancel = UIAlertAction(title: "취소", style: .cancel)
+        
+        alert.addAction(lotte)
+        alert.addAction(megaBox)
+        alert.addAction(cgv)
+        alert.addAction(allMovieTheater)
+        alert.addAction(cancel)
+        present(alert, animated: true)
     }
     
     func settingCurrentBtn() {
@@ -48,7 +172,7 @@ class ViewController: UIViewController {
         currentButton.addTarget(self, action: #selector(currentLocationBtnClicked(_:)), for: .touchUpInside)
         currentButton.tintColor = .red
         currentButton.snp.makeConstraints { make in
-            make.top.equalTo(view.safeAreaInsets).inset(50)
+            make.top.equalTo(view.safeAreaInsets).offset(150)
             make.trailing.equalTo(view.safeAreaInsets).inset(30)
         }
     }
@@ -68,8 +192,7 @@ class ViewController: UIViewController {
     func setRegionAndAnnotation(center: CLLocationCoordinate2D) {
         // 디바이스 현재 위도 경도 CLLocationCoordinate2D(latitude: 37.517926, longitude: 126.886371)
         // 37.526384, 126.896269
-        
-        let region = MKCoordinateRegion(center: center, latitudinalMeters: 100, longitudinalMeters: 100)
+        let region = MKCoordinateRegion(center: center, latitudinalMeters: 12000, longitudinalMeters: 12000)
         // mapView에 보여주기
         mapView.setRegion(region, animated: true)
         
@@ -145,6 +268,7 @@ class ViewController: UIViewController {
         case .authorizedWhenInUse:
             print("한번만 권한 허용")
             // 성공적으로 위치를 받아오면 델리게이트로 설정한 didUpdateLocations() 실행
+            addPlaceRegionAndAnnotation(type: .all)
             locationManager.startUpdatingLocation()
         case .authorized:
             print("authorized")
@@ -162,6 +286,7 @@ extension ViewController: CLLocationManagerDelegate {
         print("위치 권한을 성공적으로 받아왔을때",locations)
         if let coordinate = locations.last?.coordinate {
             setRegionAndAnnotation(center: coordinate)
+            
         }
         
     }
